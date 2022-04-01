@@ -2,7 +2,6 @@ package mpawsdxcon
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"log"
 	"os"
@@ -161,7 +160,8 @@ func (p AwsDxCon) getLastPoint(metric metrics) (float64, error) {
 
 	datapoints := response.Datapoints
 	if len(datapoints) == 0 {
-		return 0, errors.New("fetch no datapoints : " + p.DxConId)
+		log.Printf("fetch no datapoints (%s may not be supported metric): %s", metric.Name, p.DxConId)
+		return 0, nil
 	}
 
 	// get least recently datapoint.
