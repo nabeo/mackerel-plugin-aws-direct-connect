@@ -59,7 +59,7 @@ func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
 		},
 		"Bps": {
 			Label: labelPrefix + " bps",
-			Unit:  "bps",
+			Unit:  mp.UnitInteger,
 			Metrics: []mp.Metrics{
 				// The bitrate for outbound data from the AWS side of the connection.
 				{Name: "ConnectionBpsEgress", Label: "bps out"},
@@ -70,7 +70,7 @@ func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
 
 		"Pps": {
 			Label: labelPrefix + " pps",
-			Unit:  "pps",
+			Unit:  mp.UnitInteger,
 			Metrics: []mp.Metrics{
 				// The packet rate for outbound data from the AWS side of the connection.
 				{Name: "ConnectionPpsEgress", Label: "pps out"},
@@ -81,7 +81,7 @@ func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
 
 		"LightLevel": {
 			Label: labelPrefix + " Light level",
-			Unit:  "dBm",
+			Unit:  mp.UnitInteger,
 			Metrics: []mp.Metrics{
 				// Indicates the health of the fiber connection for outbound (egress) traffic from the AWS side of the connection.
 				{Name: "ConnectionLightLevelTx", Label: "egress dBm"},
