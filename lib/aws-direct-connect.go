@@ -2,6 +2,7 @@ package mpawsdxcon
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"os"
@@ -22,13 +23,14 @@ import (
 
 // AwsDxCon struct
 type AwsDxCon struct {
-	Prefix      string
-	AccessKeyID string
-	SecretKeyID string
-	Region      string
-	RoleArn     string
-	DxConId     string
-	CloudWatch  *cloudwatch.Client
+	Prefix          string
+	AccessKeyID     string
+	SecretKeyID     string
+	Region          string
+	RoleArn         string
+	DxConId         string
+	FullSpecSupport bool
+	CloudWatch      *cloudwatch.Client
 }
 
 const (
@@ -36,8 +38,9 @@ const (
 )
 
 type metrics struct {
-	Name string
-	Type types.Statistic
+	Name            string
+	Type            types.Statistic
+	FullSpecSupport bool
 }
 
 // GraphDefinition : return graph definition
@@ -46,59 +49,72 @@ func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
 	labelPrefix = strings.Replace(labelPrefix, "-", " ", -1)
 
 	// https://docs.aws.amazon.com/directconnect/latest/UserGuide/monitoring-cloudwatch.html#viewing-metrics
-	return map[string]mp.Graphs{
-		"State": {
-			Label: labelPrefix + " connection status",
-			Unit:  mp.UnitInteger,
-			Metrics: []mp.Metrics{
-				// The state of the connection.1 indicates up and 0 indicates down.
-				{Name: "ConnectionState", Label: "ConnectionState"},
-				// Indicates the connection encryption status. 1 indicates the connection encryption is up, and 0 indicates the connection encryption is down. When this metric is applied to a LAG, 1 indicates that all connections in the LAG have encrption up. 0 indicates at least one LAG connection encrption is down.
-				{Name: "ConnectionEncryptionState", Label: "ConnectionEncryptionState"},
+	if p.FullSpecSupport {
+		return map[string]mp.Graphs{
+			"State": {
+				Label: labelPrefix + " connection status",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// The state of the connection.1 indicates up and 0 indicates down.
+					{Name: "ConnectionState", Label: "ConnectionState"},
+					// Indicates the connection encryption status. 1 indicates the connection encryption is up, and 0 indicates the connection encryption is down. When this metric is applied to a LAG, 1 indicates that all connections in the LAG have encrption up. 0 indicates at least one LAG connection encrption is down.
+					{Name: "ConnectionEncryptionState", Label: "ConnectionEncryptionState"},
+				},
 			},
-		},
-		"Bps": {
-			Label: labelPrefix + " bps",
-			Unit:  mp.UnitInteger,
-			Metrics: []mp.Metrics{
-				// The bitrate for outbound data from the AWS side of the connection.
-				{Name: "ConnectionBpsEgress", Label: "bps out"},
-				// The bitrate for inbound data to the AWS side of the connection.
-				{Name: "ConnectionBpsIngress", Label: "bps in"},
+			"Bps": {
+				Label: labelPrefix + " bps",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// The bitrate for outbound data from the AWS side of the connection.
+					{Name: "ConnectionBpsEgress", Label: "bps out"},
+					// The bitrate for inbound data to the AWS side of the connection.
+					{Name: "ConnectionBpsIngress", Label: "bps in"},
+				},
 			},
-		},
 
-		"Pps": {
-			Label: labelPrefix + " pps",
-			Unit:  mp.UnitInteger,
-			Metrics: []mp.Metrics{
-				// The packet rate for outbound data from the AWS side of the connection.
-				{Name: "ConnectionPpsEgress", Label: "pps out"},
-				// The packet rate for inbound data to the AWS side of the connection.
-				{Name: "ConnectionPpsIngress", Label: "pps in"},
+			"Pps": {
+				Label: labelPrefix + " pps",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// The packet rate for outbound data from the AWS side of the connection.
+					{Name: "ConnectionPpsEgress", Label: "pps out"},
+					// The packet rate for inbound data to the AWS side of the connection.
+					{Name: "ConnectionPpsIngress", Label: "pps in"},
+				},
 			},
-		},
 
-		"LightLevel": {
-			Label: labelPrefix + " Light level",
-			Unit:  mp.UnitInteger,
-			Metrics: []mp.Metrics{
-				// Indicates the health of the fiber connection for outbound (egress) traffic from the AWS side of the connection.
-				{Name: "ConnectionLightLevelTx", Label: "egress dBm"},
+			"LightLevel": {
+				Label: labelPrefix + " Light level",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// Indicates the health of the fiber connection for outbound (egress) traffic from the AWS side of the connection.
+					{Name: "ConnectionLightLevelTx", Label: "egress dBm"},
 
-				// Indicates the health of the fiber connection for inbound (ingress) traffic to the AWS side of the connection.
-				{Name: "ConnectionLightLevelRx", Label: "ingress dBm"},
+					// Indicates the health of the fiber connection for inbound (ingress) traffic to the AWS side of the connection.
+					{Name: "ConnectionLightLevelRx", Label: "ingress dBm"},
+				},
 			},
-		},
 
-		"Error": {
-			Label: labelPrefix + " Error",
-			Unit:  mp.UnitInteger,
-			Metrics: []mp.Metrics{
-				// The total error count for all types of MAC level errors on the AWS device. The total includes cyclic redundancy check (CRC) errors.
-				{Name: "ConnectionErrorCount", Label: "CRC Errors"},
+			"Error": {
+				Label: labelPrefix + " Error",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// The total error count for all types of MAC level errors on the AWS device. The total includes cyclic redundancy check (CRC) errors.
+					{Name: "ConnectionErrorCount", Label: "CRC Errors"},
+				},
 			},
-		},
+		}
+	} else {
+		return map[string]mp.Graphs{
+			"State": {
+				Label: labelPrefix + " connection status",
+				Unit:  mp.UnitInteger,
+				Metrics: []mp.Metrics{
+					// The state of the connection.1 indicates up and 0 indicates down.
+					{Name: "ConnectionState", Label: "ConnectionState"},
+				},
+			},
+		}
 	}
 }
 
@@ -115,21 +131,23 @@ func (p AwsDxCon) FetchMetrics() (map[string]float64, error) {
 	stat := make(map[string]float64)
 
 	for _, met := range []metrics{
-		{Name: "ConnectionState", Type: types.StatisticMinimum},
-		{Name: "ConnectionEncryptionState", Type: types.StatisticMinimum},
-		{Name: "ConnectionBpsEgress", Type: types.StatisticAverage},
-		{Name: "ConnectionBpsIngress", Type: types.StatisticAverage},
-		{Name: "ConnectionPpsEgress", Type: types.StatisticAverage},
-		{Name: "ConnectionPpsIngress", Type: types.StatisticAverage},
-		{Name: "ConnectionLightLevelTx", Type: types.StatisticAverage},
-		{Name: "ConnectionLightLevelRx", Type: types.StatisticAverage},
-		{Name: "ConnectionErrorCount", Type: types.StatisticSum},
+		{Name: "ConnectionState", Type: types.StatisticMinimum, FullSpecSupport: false},
+		{Name: "ConnectionEncryptionState", Type: types.StatisticMinimum, FullSpecSupport: true},
+		{Name: "ConnectionBpsEgress", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionBpsIngress", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionPpsEgress", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionPpsIngress", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionLightLevelTx", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionLightLevelRx", Type: types.StatisticAverage, FullSpecSupport: true},
+		{Name: "ConnectionErrorCount", Type: types.StatisticSum, FullSpecSupport: true},
 	} {
-		v, err := p.getLastPoint(met)
-		if err != nil {
-			log.Printf("%s : %s", met, err)
+		if (met.FullSpecSupport == false) || (met.FullSpecSupport == true && p.FullSpecSupport == true) {
+			v, err := p.getLastPoint(met)
+			if err != nil {
+				log.Printf("%v : %s", met, err)
+			}
+			stat[met.Name] = v
 		}
-		stat[met.Name] = v
 	}
 	return stat, nil
 }
@@ -160,8 +178,12 @@ func (p AwsDxCon) getLastPoint(metric metrics) (float64, error) {
 
 	datapoints := response.Datapoints
 	if len(datapoints) == 0 {
-		log.Printf("fetch no datapoints (%s may not be supported metric): %s", metric.Name, p.DxConId)
-		return 0, nil
+		if metric.FullSpecSupport == true && p.FullSpecSupport == true {
+			log.Printf("fetch no datapoints (%s may not be supported metric): %s", metric.Name, p.DxConId)
+			return 0, nil
+		} else {
+			return 0, errors.New("fetch no datapoints (" + metric.Name + "): " + p.DxConId)
+		}
 	}
 
 	// get least recently datapoint.
@@ -225,6 +247,7 @@ func Do() {
 	optRegion := flag.String("region", os.Getenv("AWS_DEFAULT_REGION"), "AWS Region")
 	optRoleArn := flag.String("role-arn", "", "IAM Role ARN for assume role")
 	optDxCon := flag.String("direct-connect-connection", "", "Resource ID of Direct Connect")
+	optFullSpecSupport := flag.Bool("full-spec-support", true, "fetch all metrics")
 	flag.Parse()
 
 	var AwsDxCon AwsDxCon
@@ -235,6 +258,7 @@ func Do() {
 	AwsDxCon.Region = *optRegion
 	AwsDxCon.RoleArn = *optRoleArn
 	AwsDxCon.DxConId = *optDxCon
+	AwsDxCon.FullSpecSupport = *optFullSpecSupport
 
 	err := AwsDxCon.prepare()
 	if err != nil {

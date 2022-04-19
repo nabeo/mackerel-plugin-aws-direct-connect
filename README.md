@@ -7,6 +7,8 @@ Usage of mackerel-plugin-aws-direct-connect:
         AWS Access Key ID
   -direct-connect-connection string
         Resource ID of Direct Connect
+  -full-spec-support
+        fetch all metrics
   -metric-key-prefix string
         Metric Key Prefix
   -region string
@@ -20,13 +22,13 @@ $
 
 ## use Assume Role
 
-create IAM Role with the AWS Account that created Transit Gateway Attachment.
+create IAM Role with the AWS Account that created Direct Connect Connection.
 
 - no MFA
 - allowed Policy
     - CloudWatchReadOnlyAccess
 
-create IAM Policy with the AWS Account that runs mackerel-plugin-aws-transitgateway-attachment.
+create IAM Policy with the AWS Account that runs mackerel-plugin-aws-direct-connect.
 
 ```json
 {
@@ -39,7 +41,7 @@ create IAM Policy with the AWS Account that runs mackerel-plugin-aws-transitgate
 }
 ```
 
-attach IAM Policy to AWS Resouce that runs mackerel-plugin-aws-transitgateway-attachment.
+attach IAM Policy to AWS Resouce that runs mackerel-plugin-aws-direct-connect.
 
 ## Synopsis
 
