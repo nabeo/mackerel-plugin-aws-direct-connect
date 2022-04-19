@@ -247,7 +247,7 @@ func Do() {
 	optRegion := flag.String("region", os.Getenv("AWS_DEFAULT_REGION"), "AWS Region")
 	optRoleArn := flag.String("role-arn", "", "IAM Role ARN for assume role")
 	optDxCon := flag.String("direct-connect-connection", "", "Resource ID of Direct Connect")
-	optFullSpecSupport := flag.Bool("full-spec-support", false, "fetch all metrics")
+	optFullSpecSupport := flag.Bool("full-spec-support", true, "fetch all metrics")
 	flag.Parse()
 
 	var AwsDxCon AwsDxCon
