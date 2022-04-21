@@ -43,6 +43,10 @@ create IAM Policy with the AWS Account that runs mackerel-plugin-aws-direct-conn
 
 attach IAM Policy to AWS Resouce that runs mackerel-plugin-aws-direct-connect.
 
+## `-full-spec-support`
+
+AWS Direct Connect has 2 types of connections. If your AWS Direct Connect connection is Hosted Connection, choose `-full-spec-support=false`.
+
 ## Synopsis
 
 use assume role.
