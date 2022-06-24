@@ -63,7 +63,7 @@ func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
 			},
 			"Bps": {
 				Label: labelPrefix + " bps",
-				Unit:  mp.UnitInteger,
+				Unit:  mp.UnitBitsPerSecond,
 				Metrics: []mp.Metrics{
 					// The bitrate for outbound data from the AWS side of the connection.
 					{Name: "ConnectionBpsEgress", Label: "bps out"},
