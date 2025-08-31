@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
@@ -45,8 +47,8 @@ type metrics struct {
 
 // GraphDefinition : return graph definition
 func (p AwsDxCon) GraphDefinition() map[string]mp.Graphs {
-	labelPrefix := strings.Title(p.Prefix)
-	labelPrefix = strings.Replace(labelPrefix, "-", " ", -1)
+	labelPrefix := cases.Title(language.Und, cases.NoLower).String(p.Prefix)
+	labelPrefix = strings.ReplaceAll(labelPrefix, "-", " ")
 
 	// https://docs.aws.amazon.com/directconnect/latest/UserGuide/monitoring-cloudwatch.html#viewing-metrics
 	if p.FullSpecSupport {
