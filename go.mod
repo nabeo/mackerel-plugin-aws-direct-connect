@@ -1,6 +1,8 @@
 module github.com/nabeo/mackerel-plugin-aws-direct-connect
 
-go 1.18
+go 1.23.0
+
+toolchain go1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.16.5
@@ -9,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.18.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.7
 	github.com/mackerelio/go-mackerel-plugin v0.1.3
+	golang.org/x/text v0.3.8
 )
 
 require (
@@ -21,5 +24,4 @@ require (
 	github.com/aws/smithy-go v1.11.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mackerelio/golib v1.2.1 // indirect
-	golang.org/x/text v0.3.8 // indirect
 )
